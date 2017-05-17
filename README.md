@@ -1,2 +1,2 @@
 # ML
-The ML ftw :)
+The Machine Learning wrote in Python
