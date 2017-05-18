@@ -1,4 +1,3 @@
-#!/usr/bin/python3.5
 """ v1.00
 Building a dictionary with 11000 SKU name and taking its word's occurent
 """
@@ -10,6 +9,9 @@ import collections
 
 #Pre-define rule, C1 <- x, C2 > x
 RULES = 20
+
+def run(methods, core):
+    pass
 
 class CHECKER():
     """ Create an class to build object for each time doing search"""
