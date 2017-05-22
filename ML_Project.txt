@@ -1,0 +1,76 @@
+Training method
+	1. Naive Bayesian
+		1. Probability C1 and C2
+			P(C1) = (Nb_SKUs_C1) / (Nb_SKUs)  %%% Nb_SKUs_C1 = Number of SKUs in C1
+			P(C2) = (Nb_SKUs_C2) / (Nb_SKUs)  %%% Nb_SKUs_C2 = Number of SKUs in C2
+		2. Probability of the word l of x given C1, 
+			P(xl = 1 | C1) = (nb of SKUs C1 containing the word xl) / (Nb_SKUs_C1)
+		3. Probability of not the word l of x given C2, 
+			P(xl = 1 | C2) = (nb of SKUs C2 containing the word xl) / (Nb_SKUs_C2) 
+		4. Probability of not the word l of x given C1, 
+			P(xl = 0 | C1) = (nb of SKUs C1 not containing the word xl) / (Nb_SKUs_C1)
+		5. Probability of the word l of x given C2, 
+			P(xl = 0 | C2) = (nb of SKUs C2 not containing the word xl) / (Nb_SKUs_C2)
+		6. Probability of the vector x given C1
+			P(x | C1) = Product ( xl * P(xl | C1) ) for l from 1 to Nb_Words with xl = 1 or 0 depending on the word to test
+		7. Probability of the vector x given C2
+			P(x | C2) = Product ( xl * P(xl | C1) ) for l from 1 to Nb_Words
+			
+		8. Bayesian classifier
+			We consider x as C1 if:
+				(P(x | C1) / P(x | C2)) > Lambda * (P(C2) / P(C1))
+				Set Lambda = 1
+			
+			
+
+K classifier
+1. Define vector for each SKU [1,1,1,0,0,0,1,0,..]
+2. Calculate the distance between each SKU (of the training samples) and the vector x tested
+	2.1 Distance = transpose(SKU)*[x] %%% Scalar product
+	2.2 Rank the distances and take Top K (let's assume K = 100)
+    2.3 Calculate Likelyhood = (Top K SKU from C1) /	(Top K SKU)
+    2.4 If L > B (B to be defined) the we consider x as part of C1 	
+			
+Perceptron
+Objective: find function f(X) = Transpose(w)*X + B such that f(X)>0 when X belongs to C1 and f(X)<0 when X belongs to C2
+For the perceptron w and b are vectors
+1. learning
+	1.1 initialize 
+		w=0
+		b=0
+	1.2 Iteration in order to find w and b 
+		for SKU 1 to SKU N 
+		while wx+b <> c
+		w(n+1) =w(n) + cx
+		b(n+1) = b(n) + c
+		
+		if the algorithm converges wx + b = c must be true for all x. 
+		if it doesn't converge after M iteration, it means that the samples are not linearly separable
+		
+		
+
+
+
+
+SVM			
+Objective: find the linear classifier f(X) = Transpose(w)*X + B maximizing the distance between two classes. Therefore the line will be define only by the points at the "boundaries".
+1. Minimize 1/2||w||^2 and ensure y(wx+b)-1 = 0 for all xl
+	x is the vector representing each SKU (dimension = number of words)
+	w is the vector reprensenting the classifying plan 
+	b is the offset
+2. Thanks to Lagrange it is equivalent to maximize: Sum a(i) - 0.5*Sum [a(i)a(j)y(i)y(j)[xi][xj]]
+	with:
+		Sum a(i)y(i) = 0
+		w = sum a(i)y(i)xi
+		a(i) is a float
+		[xi][xj] is a inner product of each vector x (scalar product of each combination of x)
+3. Optimization to define the a(i) using gradient descent multi variables
+	3.1 Calculate all inner product [xi][xj]
+	3.2 initialize the a(i) to 0
+	3.3 for l from 1 to number of iteration (iteration until convergence)
+			for all a(i) from a(1) to a(M)
+				a(i) = a(i) + alpha * (derivative of (Sum a(i) - 0.5*Sum [a(i)a(j)y(i)y(j)[xi][xj]]) by a(i))
+			
+4. Calculate w and b
+	w = sum a(i)y(i)xi
+	b = y(i) - wxi
