@@ -5,14 +5,42 @@
 !!! Careful, dont mess with first letter of each method_dict since we will use it for
 argument passing :)
 """
+
+from configparser import ConfigParser
 import argparse
-import classifier
+import os
 
 method_dict = {
     '--baye' : 'using the Naive Bayesian',
     '--kclass': 'using the K Classifier',
     '--svm': 'using the SVM'
 }
+
+abspath = os.path.abspath(__file__)
+wkpath = os.path.dirname(abspath)
+os.chdir(wkpath)
+
+config = ConfigParser()
+config.read(wkpath + '\\classifier_setting\\setting.ini')
+data_loc = config['data_location']
+
+def run(methods, core):
+    """ main function to run the training and """
+    if methods == 'baye':
+        from classifier import Nbaye
+
+        nbaye = config['N-baye']
+
+        NBayesan = Nbaye.NBaye(nbaye, core)
+        print(NBayesan)
+
+    elif methods == '':
+        pass
+        #kclass = config['K-classifier']
+
+    elif methods == '':
+        pass
+        #svm = config['SVM']
 
 if __name__ == '__main__':
 
@@ -31,4 +59,4 @@ if __name__ == '__main__':
             method = k
             break
 
-    classifier.run(method, args.core)
+    run(method, args.core)
