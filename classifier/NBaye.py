@@ -31,7 +31,7 @@ class NBaye():
         The first value in each key value is number of freqs of words appear in Cat 1
         the second value in each key value is number of freqs of words appear in Cat 2
         """
-        list_gen_pc1 = (x[0].split() for x in dataset if x[1] <= self.rule)
+        list_gen_pc1 = (x[0].split() for x in dataset if x[1] <= self.rule) """is the list of all words with duplicate in C1, if so row 72 is not correct I think"""
         list_word_pc1 = [words for row in list_gen_pc1 for words in row]
         list_gen_pc2 = (x[0].split() for x in dataset if x[1] > self.rule)
         list_word_pc2 = [words for row in list_gen_pc2 for words in row]
@@ -55,7 +55,7 @@ class NBaye():
 
         #Update the sample amount]
         self.dataset += len(dataset)
-        self.pc1_set += sum(1 for x in list_gen_pc1)
+        self.pc1_set += sum(1 for x in list_gen_pc1) """ list_gen_pc1 is the list of all words or the list of all SKUs?"""
         self.pc2_set = self.dataset - self.pc1_set
 
     def validate(self, data):
@@ -69,12 +69,13 @@ class NBaye():
         px_c2 = 1
         for k, v in self.master_dict:
             if k in words_list:
-                px_c1 *= v[0] / self.pc1_set
+                px_c1 *= v[0] / self.pc1_set """do you divide for each iteration by self.pc1_set?""""""self.pc1_set is the number of SKU in C1 not the number of words in C1. Is it correct?"""
                 px_c2 *= v[1] / self.pc2_set
             else:
                 px_c1 *= 1 - v[0] / self.pc1_set
                 px_c2 *= 1 - v[1] / self.pc1_set
-
+				""" should be px_c2 *= 1 - v[1] / self.pc2_set
+				"""
         lambda_X = px_c1 / px_c2
         machine_rs = True if (lambda_X > self.lamda * self.pc2_set / self.pc1_set) else False
         rule_compare = float(data[1]) <= self.rule
