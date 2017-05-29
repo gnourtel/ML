@@ -19,9 +19,8 @@ class NBaye():
 
     def __init__(self, setting, core):
         self.core = core
-        self.lamda = setting['lambda']
-        self.sample = setting['sample']
-        self.rule = setting['rule']
+        self.lamda = int(setting['lambda'])
+        self.rule = int(setting['rule'])
 
     def training(self, dataset):
         """ data receive in a list of list
@@ -31,9 +30,11 @@ class NBaye():
         The first value in each key value is number of freqs of words appear in Cat 1
         the second value in each key value is number of freqs of words appear in Cat 2
         """
-        list_gen_pc1 = (x[0].split() for x in dataset if x[1] <= self.rule)
+        start = time.time()
+
+        list_gen_pc1 = (x[0].split() for x in dataset if float(x[1]) <= self.rule)
         list_word_pc1 = [words for row in list_gen_pc1 for words in row]
-        list_gen_pc2 = (x[0].split() for x in dataset if x[1] > self.rule)
+        list_gen_pc2 = (x[0].split() for x in dataset if float(x[1]) > self.rule)
         list_word_pc2 = [words for row in list_gen_pc2 for words in row]
 
         #Building the dict
@@ -43,20 +44,22 @@ class NBaye():
         #Update the dict into master dict
         for k, v in pc1_dict.items():
             if k in self.master_dict:
-                self.master_dict[0] += v
+                self.master_dict[k][0] += v
             else:
                 self.master_dict[k] = [v, 0]
 
         for k, v in pc2_dict.items():
             if k in self.master_dict:
-                self.master_dict[1] += v
+                self.master_dict[k][1] += v
             else:
                 self.master_dict[k] = [0, v]
 
         #Update the sample amount]
         self.dataset += len(dataset)
-        self.pc1_set += sum(1 for x in list_gen_pc1)
+        self.pc1_set += sum(1 for x in dataset if float(x[1]) <= self.rule)
         self.pc2_set = self.dataset - self.pc1_set
+
+        print('Training of', len(dataset), 'words takes', round(time.time() - start, 5), 's')
 
     def validate(self, data):
         """ Calculate the data input according to master dict and calculate the division
@@ -64,16 +67,16 @@ class NBaye():
         In: [word, value]
         Out: True / False
         """
-        words_list = data.split()
+        words_list = data[0].split()
         px_c1 = 1
         px_c2 = 1
-        for k, v in self.master_dict:
+        for k, v in self.master_dict.items():
             if k in words_list:
-                px_c1 *= v[0] / self.pc1_set
-                px_c2 *= v[1] / self.pc2_set
+                px_c1 *= (v[0] + 1) / (self.pc1_set + 1)
+                px_c2 *= (v[1] + 1) / (self.pc2_set + 1)
             else:
-                px_c1 *= 1 - v[0] / self.pc1_set
-                px_c2 *= 1 - v[1] / self.pc1_set
+                px_c1 *= 1 - (v[0] + 1) / (self.pc1_set + 1)
+                px_c2 *= 1 - (v[1] + 1) / (self.pc2_set + 1)
 
         lambda_X = px_c1 / px_c2
         machine_rs = True if (lambda_X > self.lamda * self.pc2_set / self.pc1_set) else False
@@ -101,3 +104,31 @@ class NBaye():
               '% predicted correct - dictionary size of ', len(self.master_dict))
 
         #output into log
+
+###testing
+import csv
+with open('C:\\Users\\Truong Le Nguyen\\Desktop\\ML\\data_feed\\machine_feed.csv', encoding='utf-8') as rd:
+    csvreader = csv.reader(rd)
+    dt1 = list(csvreader)[1:2000]
+    dt = [[x[1], x[4]] for x in dt1]
+
+stng = {
+    'lambda': '1',
+    'rule': '20'
+}
+
+test = NBaye(stng, 2)
+test.training(dt[:1000])
+
+b = time.time()
+
+a = []
+for x in range(990):
+    x += 1000
+    a.append(test.validate(dt[x]))
+
+# p = Pool(processes=4)
+
+# rs = p.map(test.validate, dt[1000:])
+
+print(time.time() - b)

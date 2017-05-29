@@ -9,6 +9,7 @@ argument passing :)
 from configparser import ConfigParser
 import argparse
 import os
+import csv
 
 method_dict = {
     '--baye' : 'using the Naive Bayesian',
@@ -21,18 +22,16 @@ wkpath = os.path.dirname(abspath)
 os.chdir(wkpath)
 
 config = ConfigParser()
-config.read(wkpath + '\\classifier_setting\\setting.ini')
+config.read(wkpath + '\\classifier\\setting.ini')
 data_loc = config['data_location']
 
 def run(methods, core):
     """ main function to run the training and """
     if methods == 'baye':
-        from classifier import Nbaye
+        from classifier import NBaye
 
         nbaye = config['N-baye']
-
-        NBayesan = Nbaye.NBaye(nbaye, core)
-        print(NBayesan)
+        classify = NBaye.NBaye(nbaye, core)
 
     elif methods == '':
         pass
@@ -42,8 +41,17 @@ def run(methods, core):
         pass
         #svm = config['SVM']
 
-if __name__ == '__main__':
+    with open(wkpath + data_loc['feeding'], 'r', encoding='utf-8') as rd:
+        csvreader = csv.reader(rd)
+        data = list(csvreader)[1:]
 
+    max_looping = len(data) // int(nbaye['sample'])
+
+    for x in range(max_looping):
+        classify.training([[y[1], y[4]] for y in data[x * 1000 : (x + 1) * 1000]])
+        classify.run([[y[1], y[4]] for y in data[(x + 1) * 1000 : (x + 2) * 1000]])
+
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run the ML training')
 
     method_group = parser.add_mutually_exclusive_group(required=True)
