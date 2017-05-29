@@ -1,5 +1,6 @@
 Training method
-	1. Naive Bayesian
+
+Naive Bayesian 2 Cat
 		1. Probability C1 and C2
 			P(C1) = (Nb_SKUs_C1) / (Nb_SKUs)  %%% Nb_SKUs_C1 = Number of SKUs in C1
 			P(C2) = (Nb_SKUs_C2) / (Nb_SKUs)  %%% Nb_SKUs_C2 = Number of SKUs in C2
@@ -21,6 +22,48 @@ Training method
 				(P(x | C1) / P(x | C2)) > Lambda * (P(C2) / P(C1))
 				Set Lambda = 1
 			
+			
+Naive Bayesian 4 Cats
+		1. Probability C1, C2, C3, C4 ----> Vector
+			P(C1) = (Nb_SKUs_C1) / (Nb_SKUs)  %%% Nb_SKUs_C1 = Number of SKUs in C1
+			P(C2) = (Nb_SKUs_C2) / (Nb_SKUs)  %%% Nb_SKUs_C2 = Number of SKUs in C2
+			P(C3) = (Nb_SKUs_C3) / (Nb_SKUs)  %%% Nb_SKUs_C3 = Number of SKUs in C3
+			P(C4) = (Nb_SKUs_C4) / (Nb_SKUs)  %%% Nb_SKUs_C4 = Number of SKUs in C4
+		2. Probability of the word l of x given C1, C2, C3, C4 ----> Matrix n x 4
+			P(xl = 1 | C1) = (nb of SKUs C1 containing the word xl) / (Nb_SKUs_C1)
+			P(xl = 1 | C2) = (nb of SKUs C2 containing the word xl) / (Nb_SKUs_C2)
+			P(xl = 1 | C3) = (nb of SKUs C3 containing the word xl) / (Nb_SKUs_C3)
+			P(xl = 1 | C4) = (nb of SKUs C4 containing the word xl) / (Nb_SKUs_C4)			
+		3. Probability of not the word l of x given C1, C2, C3, C4 ----> Matrix n x 4
+			P(xl = 0 | C1) = (nb of SKUs C1 not containing the word xl) / (Nb_SKUs_C1)
+			P(xl = 0 | C2) = (nb of SKUs C2 not containing the word xl) / (Nb_SKUs_C2)
+			P(xl = 0 | C3) = (nb of SKUs C3 not containing the word xl) / (Nb_SKUs_C3)
+			P(xl = 0 | C4) = (nb of SKUs C4 not containing the word xl) / (Nb_SKUs_C4)
+			
+		4. Dictionary probability vector
+			P (dictionary = 1 | Ci) = vector made from 2.
+			P (dictionary = 0 | Ci) = vector made from 3.
+			 
+			
+		5. Probability of the vector x given C1, C2, C3, C4 ----> 
+			P(x | C1) = Product ( xl * P(xl | C1) ) for l from 1 to Nb_Words with xl = 1 or 0 depending on the word to test
+			P(x | C2) = Product ( xl * P(xl | C2) ) for l from 1 to Nb_Words with xl = 1 or 0 depending on the word to test
+			P(x | C3) = Product ( xl * P(xl | C3) ) for l from 1 to Nb_Words with xl = 1 or 0 depending on the word to test
+			P(x | C4) = Product ( xl * P(xl | C4) ) for l from 1 to Nb_Words with xl = 1 or 0 depending on the word to test
+			
+			P(x | Ci) = Product ( xl * P(xl | Ci) ) for l from 1 to Nb_Words with xl = 1 or 0 depending on the word to test
+			
+			P(x | Ci)= Product vector: ( P(dictionary = 1 | Ci) . X ) + ( P(dictionary = 0 | Ci) . 1-X )
+		
+			
+		8. Bayesian classifier
+			We consider x as C1 if:
+				(P(x | C1) / P(x | C2)) > Lambda1 * (P(C2) / P(C1))
+				(P(x | C1) / P(x | C3)) > Lambda2 * (P(C3) / P(C1))
+				(P(x | C1) / P(x | C4)) > Lambda3 * (P(C4) / P(C1))
+				
+				
+		
 			
 
 K classifier
