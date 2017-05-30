@@ -4,6 +4,16 @@
 from multiprocessing import Pool
 from collections import Counter
 import time
+import sys
+
+def parallel_call(params):
+    """ a helper for calling 'remote' instances """
+    cls = getattr(sys.modules[__name__], params[0])  # get our class type
+    instance = cls.__new__(cls)  # create a new instance without invoking __init__
+    instance.__dict__ = params[1]  # apply the passed state to the new instance
+    method = getattr(instance, params[2])  # get the requested method
+    args = params[3] if isinstance(params[3], (list, tuple)) else [params[3]]
+    return method(*args)  # expand arguments, call our method and return the result
 
 class NBaye():
     """ N Bayesian object for trainning
@@ -30,13 +40,13 @@ class NBaye():
         The first value in each key value is number of freqs of words appear in Cat 1
         the second value in each key value is number of freqs of words appear in Cat 2
         """
-<<<<<<< HEAD
+
         start = time.time()
 
+        """ list_gen_pcx is the list generator which hold all the SKU that match the rule,
+        ex: [[w1, w2, w3], [w3, w5, w7], ...]
+        """
         list_gen_pc1 = (x[0].split() for x in dataset if float(x[1]) <= self.rule)
-=======
-        list_gen_pc1 = (x[0].split() for x in dataset if x[1] <= self.rule) """is the list of all words with duplicate in C1, if so row 72 is not correct I think"""
->>>>>>> d6506e72cbeabc39abba943a19a0df6bfbea49f3
         list_word_pc1 = [words for row in list_gen_pc1 for words in row]
         list_gen_pc2 = (x[0].split() for x in dataset if float(x[1]) > self.rule)
         list_word_pc2 = [words for row in list_gen_pc2 for words in row]
@@ -60,16 +70,12 @@ class NBaye():
 
         #Update the sample amount]
         self.dataset += len(dataset)
-<<<<<<< HEAD
         self.pc1_set += sum(1 for x in dataset if float(x[1]) <= self.rule)
-=======
-        self.pc1_set += sum(1 for x in list_gen_pc1) """ list_gen_pc1 is the list of all words or the list of all SKUs?"""
->>>>>>> d6506e72cbeabc39abba943a19a0df6bfbea49f3
         self.pc2_set = self.dataset - self.pc1_set
 
         print('Training of', len(dataset), 'words takes', round(time.time() - start, 5), 's')
 
-    def validate(self, data):
+    def validate(self, *data):
         """ Calculate the data input according to master dict and calculate the division
         of P(data | C1) / P(data | C2) and compare to P(C2) / P(C1)
         In: [word, value]
@@ -80,26 +86,21 @@ class NBaye():
         px_c2 = 1
         for k, v in self.master_dict.items():
             if k in words_list:
-<<<<<<< HEAD
                 px_c1 *= (v[0] + 1) / (self.pc1_set + 1)
                 px_c2 *= (v[1] + 1) / (self.pc2_set + 1)
             else:
                 px_c1 *= 1 - (v[0] + 1) / (self.pc1_set + 1)
                 px_c2 *= 1 - (v[1] + 1) / (self.pc2_set + 1)
-
-=======
-                px_c1 *= v[0] / self.pc1_set """do you divide for each iteration by self.pc1_set?""""""self.pc1_set is the number of SKU in C1 not the number of words in C1. Is it correct?"""
-                px_c2 *= v[1] / self.pc2_set
-            else:
-                px_c1 *= 1 - v[0] / self.pc1_set
-                px_c2 *= 1 - v[1] / self.pc1_set
-				""" should be px_c2 *= 1 - v[1] / self.pc2_set
-				"""
->>>>>>> d6506e72cbeabc39abba943a19a0df6bfbea49f3
         lambda_X = px_c1 / px_c2
         machine_rs = True if (lambda_X > self.lamda * self.pc2_set / self.pc1_set) else False
         rule_compare = float(data[1]) <= self.rule
         return [machine_rs == rule_compare, lambda_X]
+
+    def prepare_call(self, name, args):
+        """ creates a 'remote call' package for each argument """
+        for arg in args:
+            yield [self.__class__.__name__, self.__dict__, name, arg]
+
 
     def run(self, dataset):
         """ Process the dataset by dividing the data steam into multiple process to speed
@@ -111,42 +112,32 @@ class NBaye():
         process_pool = Pool(processes=self.core)
 
         start = time.time()
-        result = process_pool.map(self.validate, [x for x in dataset])
+        result = process_pool.map(parallel_call, self.prepare_call("validate", dataset))
 
         process_pool.close()
 
-        rs_counter = Counter(result)
+        rs_counter = Counter([x[0] for x in result])
 
         print('Validated', len(dataset), 'records - finish in', round(time.time() - start, 2))
-        print(round(rs_counter / len(dataset) * 100, 1),
+        print(round(rs_counter[True] / len(dataset) * 100, 1),
               '% predicted correct - dictionary size of ', len(self.master_dict))
 
         #output into log
 
 ###testing
-import csv
-with open('C:\\Users\\Truong Le Nguyen\\Desktop\\ML\\data_feed\\machine_feed.csv', encoding='utf-8') as rd:
-    csvreader = csv.reader(rd)
-    dt1 = list(csvreader)[1:2000]
-    dt = [[x[1], x[4]] for x in dt1]
+if __name__ == "__main__":
+    import csv
+    with open('C:\\Users\\Truong Le Nguyen\\Desktop\\ML\\data_feed\\machine_feed.csv', encoding='utf-8') as rd:
+        csvreader = csv.reader(rd)
+        dt1 = list(csvreader)[1:4000]
+        dt = [[x[1], x[4]] for x in dt1]
 
-stng = {
-    'lambda': '1',
-    'rule': '20'
-}
+    stng = {
+        'lambda': '1',
+        'rule': '20'
+    }
 
-test = NBaye(stng, 2)
-test.training(dt[:1000])
-
-b = time.time()
-
-a = []
-for x in range(990):
-    x += 1000
-    a.append(test.validate(dt[x]))
-
-# p = Pool(processes=4)
-
-# rs = p.map(test.validate, dt[1000:])
-
-print(time.time() - b)
+    test = NBaye(stng, 2)
+    for x in range(3):
+        test.training(dt[x * 1000 : (x + 1) * 1000])
+        test.run(dt[(x + 1) * 1000 : (x + 2) * 1000])
