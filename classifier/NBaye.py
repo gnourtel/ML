@@ -1,19 +1,19 @@
 # pylint: disable=C0103
 """ Naive Bayessian Classifer """
 
-from multiprocessing import Pool
+# from multiprocessing import Process #, Pool
 from collections import Counter
 import time
-import sys
+# import sys
 
-def parallel_call(params):
-    """ a helper for calling 'remote' instances """
-    cls = getattr(sys.modules[__name__], params[0])  # get our class type
-    instance = cls.__new__(cls)  # create a new instance without invoking __init__
-    instance.__dict__ = params[1]  # apply the passed state to the new instance
-    method = getattr(instance, params[2])  # get the requested method
-    args = params[3] if isinstance(params[3], (list, tuple)) else [params[3]]
-    return method(*args)  # expand arguments, call our method and return the result
+# def parallel_call(params):
+#     """ a helper for calling 'remote' instances """
+#     cls = getattr(sys.modules[__name__], params[0])  # get our class type
+#     instance = cls.__new__(cls)  # create a new instance without invoking __init__
+#     instance.__dict__ = params[1]  # apply the passed state to the new instance
+#     method = getattr(instance, params[2])  # get the requested method
+#     args = params[3] if isinstance(params[3], (list, tuple)) else [params[3]]
+#     return method(args)  # expand arguments, call our method and return the result
 
 class NBaye():
     """ N Bayesian object for trainning
@@ -74,8 +74,9 @@ class NBaye():
         self.pc2_set = self.dataset - self.pc1_set
 
         print('Training of', len(dataset), 'words takes', round(time.time() - start, 5), 's')
+        print("Dict size:", len(self.dataset))
 
-    def validate(self, *data):
+    def validate(self, data):
         """ Calculate the data input according to master dict and calculate the division
         of P(data | C1) / P(data | C2) and compare to P(C2) / P(C1)
         In: [word, value]
@@ -96,48 +97,36 @@ class NBaye():
         rule_compare = float(data[1]) <= self.rule
         return [machine_rs == rule_compare, lambda_X]
 
-    def prepare_call(self, name, args):
-        """ creates a 'remote call' package for each argument """
-        for arg in args:
-            yield [self.__class__.__name__, self.__dict__, name, arg]
+    # def prepare_call(self, name, args):
+    #     """ creates a 'remote call' package for each argument """
+    #     for arg in args:
+    #         yield [self.__class__.__name__, self.__dict__, name, arg]
 
 
-    def run(self, dataset):
-        """ Process the dataset by dividing the data steam into multiple process to speed
-        up the validiton
-        In: [[w1, val1], [w2, val2], ...]
-        Sub-Out: [[True/False, score], ......]
-        Out: % of sub-out is True and list of item is False and it's score
-        """
-        process_pool = Pool(processes=self.core)
+    # def run(self, dataset):
+    #     """ Process the dataset by dividing the data stream into multiple process to speed
+    #     up the validiton
+    #     In: [[w1, val1], [w2, val2], ...]
+    #     Sub-Out: [[True/False, score], ......]
+    #     Out: % of sub-out is True and list of item is False and it's score
+    #     """
+    #     # process_pool = Pool(processes=self.core)
 
-        start = time.time()
-        result = process_pool.map(parallel_call, self.prepare_call("validate", dataset))
+    #     start = time.time()
+    #     # result = process_pool.map(self.validate, dataset)
 
-        process_pool.close()
+    #     # process_pool.close()
 
-        rs_counter = Counter([x[0] for x in result])
+    #     result = []
+    #     for ele in dataset:
+    #         j = Process(target=self.validate, args=(ele,))
+    #         result.append(j)
 
-        print('Validated', len(dataset), 'records - finish in', round(time.time() - start, 2))
-        print(round(rs_counter[True] / len(dataset) * 100, 1),
-              '% predicted correct - dictionary size of ', len(self.master_dict))
+    #     rs_counter = Counter([x[0] for x in result])
 
-        #output into log
+    #     print(rs_counter)
+    #     print('Validated', len(dataset), 'records - finish in', round(time.time() - start, 2))
+    #     print(round(rs_counter[True] / len(dataset) * 100, 1),
+    #           '% predicted correct - dictionary size of ', len(self.master_dict))
 
-###testing
-if __name__ == "__main__":
-    import csv
-    with open('C:\\Users\\Truong Le Nguyen\\Desktop\\ML\\data_feed\\machine_feed.csv', encoding='utf-8') as rd:
-        csvreader = csv.reader(rd)
-        dt1 = list(csvreader)[1:4000]
-        dt = [[x[1], x[4]] for x in dt1]
-
-    stng = {
-        'lambda': '1',
-        'rule': '20'
-    }
-
-    test = NBaye(stng, 2)
-    for x in range(3):
-        test.training(dt[x * 1000 : (x + 1) * 1000])
-        test.run(dt[(x + 1) * 1000 : (x + 2) * 1000])
+    #     #output into log

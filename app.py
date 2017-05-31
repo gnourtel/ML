@@ -7,6 +7,7 @@ argument passing :)
 """
 
 from configparser import ConfigParser
+from collections import Counter
 import argparse
 import os
 import csv
@@ -49,7 +50,13 @@ def run(methods, core):
 
     for x in range(max_looping):
         classify.training([[y[1], y[4]] for y in data[x * 1000 : (x + 1) * 1000]])
-        classify.run([[y[1], y[4]] for y in data[(x + 1) * 1000 : (x + 2) * 1000]])
+        rs = []
+        test_gen = [[y[1], y[4]] for y in data[(x + 1) * 1000 : (x + 2) * 1000]]
+        for z in test_gen:
+            rs.append(classify.validate(z))
+
+        true_counter = Counter([x[0] for x in rs])
+        print(true_counter[True] / len(test_gen), '% predicted correct')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run the ML training')
@@ -67,4 +74,7 @@ if __name__ == '__main__':
             method = k
             break
 
-    run(method, args.core)
+    try:
+        run(method, args.core)
+    except KeyboardInterrupt:
+        print("Cancelling process...")
