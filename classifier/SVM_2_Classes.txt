@@ -1,0 +1,4 @@
+M = number of training samples
+N = number of words in dictionnary 
+Coeff_a = np.zeros(1,M)
+Matrix_X = np.zeros (N,M) """Concatenate of all training samples, a training sample is a column"""
