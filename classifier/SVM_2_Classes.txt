@@ -1,4 +1,36 @@
 M = number of training samples
 N = number of words in dictionnary 
+alpha = 0.5 """coeff of convergence"""
+
 Coeff_a = np.zeros(1,M)
 Matrix_X = np.zeros (N,M) """Concatenate of all training samples, a training sample is a column"""
+Matrix_Y = np.zeros (1,M) """Concatenate of all label (Category) of the training samples"""
+Matrix_A = np.ones (1,M) """Concatenate of all coefficients of the training samples"""
+
+Matrix_XX = np.zeros (M,M) """inner product of all training sample vector. It will be used later. Therefore we will calculate it only once and store it"""
+Matrix_AAXXYY = np.zeros (M,M)
+Matrix_AXXYY = np.zeros (M,M)
+
+
+for i,j from 1 to M:
+	Matrix_XX = np.inner(Matrix_X[:,i],Matrix_X[:,j])
+	Matrix_YY = np.inner(Matrix_Y[1,i],Matrix_Y[1,j])
+	Matrix_AA = np.inner(Matrix_Y[1,i],Matrix_Y[1,j])
+	Matrix_AAXXYY = Matrix_AA[i,j]*Matrix_XX[i,j]*Matrix_YY[i,j]
+	Matrix_AXXYY = Matrix_A[1,j]*Matrix_XX[i,j]*Matrix_YY[i,j]
+		
+
+F = sum(Matrix_A) - 0.5*sum(Matrix_AAXXYY)
+
+ 
+
+for k 1 to 1000
+	for i 1 to M
+		for j from 1 to M:
+		Matrix_AXXYY = Matrix_A[1,j]*Matrix_XX[i,j]*Matrix_YY[i,j]
+		
+	dF = 1 - 0.5*sum(Matrix_AXXYY) 
+	Matrix_A[1,i] = Matrix_A[1,i] + alpha*dF
+	
+W = 
+B = 
