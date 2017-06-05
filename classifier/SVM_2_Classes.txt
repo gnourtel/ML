@@ -8,9 +8,9 @@ Matrix_Y = np.zeros (1,M) """Concatenate of all label (Category) of the training
 Matrix_A = np.ones (1,M) """Concatenate of all coefficients of the training samples"""
 
 Matrix_XX = np.zeros (M,M) """inner product of all training sample vector. It will be used later. Therefore we will calculate it only once and store it"""
-Matrix_AAXXYY = np.zeros (M,M)
-Matrix_AXXYY = np.zeros (M,M)
-
+Matrix_AAXXYY = np.zeros (M,M) """for calculation only"""
+Matrix_AXXYY = np.zeros (M,M) """for calculation only"""
+Matrix_AYX = np.zeros (N,M)  """for calculation only"""
 
 for i,j from 1 to M:
 	Matrix_XX = np.inner(Matrix_X[:,i],Matrix_X[:,j])
@@ -20,10 +20,10 @@ for i,j from 1 to M:
 	Matrix_AXXYY = Matrix_A[1,j]*Matrix_XX[i,j]*Matrix_YY[i,j]
 		
 
-F = sum(Matrix_A) - 0.5*sum(Matrix_AAXXYY)
+F = sum(Matrix_A) - 0.5*sum(Matrix_AAXXYY) """function to maximize"""
 
  
-
+"""we start the gradient descent"""
 for k 1 to 1000
 	for i 1 to M
 		for j from 1 to M:
@@ -31,6 +31,11 @@ for k 1 to 1000
 		
 	dF = 1 - 0.5*sum(Matrix_AXXYY) 
 	Matrix_A[1,i] = Matrix_A[1,i] + alpha*dF
-	
-W = 
-B = 
+
+"""after 1000 iterations, we get a value of the Matrix_A"""
+""" we can deduce W and B"""	
+for i 1 to M
+	Matrix_AYX [:,i] = Matrix_A[1,i]*Matrix_Y[1,i]*Matrix_X[:,i] 
+	Matrix_W = Matrix_W + Matrix_AYX[:,i]
+
+B = Matrix_Y[1,random number] - np.inner(Matrix_X[:,random number],Matrix_W[:,random number])
