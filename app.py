@@ -21,6 +21,7 @@ method_dict = {
 abspath = os.path.abspath(__file__)
 wkpath = os.path.dirname(abspath)
 os.chdir(wkpath)
+output_pth = wkpath + '\\data_output\\'
 
 config = ConfigParser()
 config.read(wkpath + '\\classifier\\setting.ini')
@@ -48,15 +49,13 @@ def run(methods, core):
 
     max_looping = len(data) // int(nbaye['sample'])
 
-    for x in range(max_looping):
+    for num, x in enumerate(range(max_looping)):
+        print(num)
         classify.training([[y[1], y[4]] for y in data[x * 1000 : (x + 1) * 1000]])
-        rs = []
-        test_gen = [[y[1], y[4]] for y in data[(x + 1) * 1000 : (x + 2) * 1000]]
-        for z in test_gen:
-            rs.append(classify.validate(z))
 
-        true_counter = Counter([x[0] for x in rs])
-        print(true_counter[True] / len(test_gen), '% predicted correct')
+        test_gen = [[y[1], y[4]] for y in data[(x + 1) * 1000 : (x + 2) * 1000]]
+        classify.run(test_gen, output_pth)
+        print("---------------------------------")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run the ML training')

@@ -1,24 +1,25 @@
 # pylint: disable=C0103
 """ Naive Bayessian Classifer """
 
-# from multiprocessing import Process #, Pool
-#from collections import Counter
+from multiprocessing import Pool
+from collections import Counter
 import json
 import time
+import sys
+import csv
 import numpy as np
 
-# import sys
+def parallel_call(params):
+    """ a helper for calling 'remote' instances """
+    cls = getattr(sys.modules[__name__], params[0])  # get our class type
+    instance = cls.__new__(cls)  # create a new instance without invoking __init__
+    instance.__dict__ = params[1]  # apply the passed state to the new instance
+    method = getattr(instance, params[2])  # get the requested method
+    args = params[3] if isinstance(params[3], (list, tuple)) else [params[3]]
+    return method(args)  # expand arguments, call our method and return the result
 
-# def parallel_call(params):
-#     """ a helper for calling 'remote' instances """
-#     cls = getattr(sys.modules[__name__], params[0])  # get our class type
-#     instance = cls.__new__(cls)  # create a new instance without invoking __init__
-#     instance.__dict__ = params[1]  # apply the passed state to the new instance
-#     method = getattr(instance, params[2])  # get the requested method
-#     args = params[3] if isinstance(params[3], (list, tuple)) else [params[3]]
-#     return method(args)  # expand arguments, call our method and return the result
 
-class NBaye():
+class NBaye(object):
     """ Naive Bayesian object for trainning
         from the initial loading, with n category rule, the training sample will be splitted
         into n + 1 list, the dict will be flexible adapt as following:
@@ -28,16 +29,16 @@ class NBaye():
         dict(n) will hold all the dictionary records < rule n
         dict(n+1) will hold all the dictionary records >= rule n
     """
-    master_dict = {}
-    pcx_set = {
-        'dataset': 0
-    }
 
     def __init__(self, setting, core):
         self.core = core
         self.lamda = int(setting['lambda'])
         self.rules = json.loads(setting['rule'])
         self.rules_len = len(self.rules) + 1
+        self.master_dict = {}
+        self.pcx_set = {
+            'dataset': 0
+        }
 
         #this will load initial value the pc1_set .. pc(n+1)_set to pcx_set
         for x in range(len(self.rules) + 1):
@@ -102,15 +103,16 @@ class NBaye():
                 Pbx_Cy *= 1 - (np.array(v) + 1) / (Fr_C + 1)
 
         lambda_X = np.array([])
-        for x in range(self.rules_len):
-            tmp = Pbx_Cy[x] / Pbx_Cy - self.lamda * Pb_C / Pb_C[x]
-            lambda_X = np.append(lambda_X, tmp)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            for rule in range(self.rules_len):
+                tmp_rs = Pbx_Cy[0][rule] / Pbx_Cy - self.lamda * Pb_C / Pb_C[rule]
+                lambda_X = np.append(lambda_X, tmp_rs)
 
         lambda_X = lambda_X.reshape(self.rules_len, self.rules_len)
 
         #select in lambda_X which row (cat) has the min >= 0
         min_lambda = np.amin(lambda_X, axis=1) #return array of min value of each row
-        cat_pos = np.argmax(min_lambda) #since we only have 1 solution which min is >=0
+        cat_pos = np.nanargmax(min_lambda) #since we only have 1 solution which min is >=0
 
         for x, rule in enumerate(self.rules):
             if float(data[1]) <= rule:
@@ -119,56 +121,65 @@ class NBaye():
         else:
             cat_rule = len(self.rules)
 
-        return [cat_pos == cat_rule, lambda_X]
+        return [cat_pos == cat_rule, lambda_X, cat_pos, cat_rule]
 
-    # def prepare_call(self, name, args):
-    #     """ creates a 'remote call' package for each argument """
-    #     for arg in args:
-    #         yield [self.__class__.__name__, self.__dict__, name, arg]
+    def prepare_call(self, name, args):
+        """ creates a 'remote call' package for each argument """
+        for arg in args:
+            yield [self.__class__.__name__, self.__dict__, name, arg]
 
+    def run(self, dataset, output_path=None):
+        """ Process the dataset by dividing the data stream into multiple process to speed
+        up the validiton
+        In: [[w1, val1], [w2, val2], ...]
+        Sub-Out: [[True/False, score], ......]
+        Out: % of sub-out is True and list of item is False and it's score
+        """
+        process_pool = Pool(processes=self.core)
 
-    # def run(self, dataset):
-    #     """ Process the dataset by dividing the data stream into multiple process to speed
-    #     up the validiton
-    #     In: [[w1, val1], [w2, val2], ...]
-    #     Sub-Out: [[True/False, score], ......]
-    #     Out: % of sub-out is True and list of item is False and it's score
-    #     """
-    #     # process_pool = Pool(processes=self.core)
+        st = time.time()
+        result = process_pool.map(parallel_call, self.prepare_call("validate", dataset))
 
-    #     start = time.time()
-    #     # result = process_pool.map(self.validate, dataset)
+        process_pool.close()
 
-    #     # process_pool.close()
+        rs_counter = Counter([x[0] for x in result])
 
-    #     result = []
-    #     for ele in dataset:
-    #         j = Process(target=self.validate, args=(ele,))
-    #         result.append(j)
+        print('Validated', len(dataset), 'records - finish in', round(time.time() - st, 2))
+        print(round(rs_counter[True] / len(dataset) * 100, 1), '% predicted correct')
 
-    #     rs_counter = Counter([x[0] for x in result])
-
-    #     print(rs_counter)
-    #     print('Validated', len(dataset), 'records - finish in', round(time.time() - start, 2))
-    #     print(round(rs_counter[True] / len(dataset) * 100, 1),
-    #           '% predicted correct - dictionary size of ', len(self.master_dict))
-
-    #     #output into log
+        #output into log
+        if output_path is not None:
+            file_name = output_path + 'NBaye-{:1.0f}.csv'.format(time.time())
+            with open(file_name, 'w', encoding='utf-8') as wr:
+                for k, v in self.master_dict.items():
+                    wr.write('"{}": {}\n'.format(k, v))
+                for ele in result:
+                    wr.write('{}\n'.format(ele))
 
 # For internal testing
 if __name__ == '__main__':
     settng = {
-        'rule': '[20, 30, 50]',
+        'rule': '[20, 30, 40]',
         'lambda': 1
     }
 
-    import csv
-    with open('C:\\Users\\Truong Le Nguyen\\Desktop\\ML\\data_feed\\machine_feed.csv', 'r', encoding='utf-8') as rd:
-        csvreader = csv.reader(rd)
-        dt = [[x[1], x[4]] for x in list(csvreader)[1:1000]]
+    import os
+
+    dr = os.path.dirname(__file__)
+    feeder = os.path.join(dr, '\\data_feed\\machine_feed.csv')
+
+    with open(feeder, 'r', encoding='utf-8') as rd:
+        csvreader = csv.reader(rd, delimiter=',', quotechar='"')
+        dt = [[x[1], x[4]] for x in list(csvreader)[1:10000]]
 
     a = NBaye(settng, 4)
 
-    a.training(dt)
+    try:
+        for z, y in enumerate(range(10)):
+            print(z)
+            a.training(dt[y * 1000 : (y + 1) * 1000])
 
-    pass
+            a.run(dt[(y + 1) * 1000 : (y + 2) * 1000])
+            print('----------------------\r\n')
+    except KeyboardInterrupt:
+        print("cancel...")
