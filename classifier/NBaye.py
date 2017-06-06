@@ -149,12 +149,14 @@ class NBaye(object):
 
         #output into log
         if output_path is not None:
-            file_name = output_path + 'NBaye-{:1.0f}.csv'.format(time.time())
-            with open(file_name, 'w', encoding='utf-8') as wr:
+            file_name = output_path + 'NBaye-{:1.0f}'.format(time.time())
+            with open(file_name + '-dict.csv', 'w', encoding='utf-8') as wr:
                 for k, v in self.master_dict.items():
                     wr.write('"{}": {}\n'.format(k, v))
-                for ele in result:
-                    wr.write('{}\n'.format(ele))
+            with open(file_name + '-test.csv', 'w', encoding='utf-8') as wr:
+                for data, ele in zip(dataset, result):
+                    wr.write('{}\n'.format(data))
+                    wr.write('{}\n\n'.format(ele))
 
 # For internal testing
 if __name__ == '__main__':
