@@ -7,7 +7,10 @@ import json
 import time
 import sys
 import csv
+import re
 import numpy as np
+
+regex = r"[a-zA-Z]+\W[a-zA-Z]+|[a-zA-Z]+"
 
 def parallel_call(params):
     """ a helper for calling 'remote' instances """
@@ -68,6 +71,9 @@ class NBaye(object):
                 idx = len(self.rules)
 
             for word in data[0].split():
+                matches = re.search(regex, word)
+                if matches:
+                    word = matches.group()
                 if word not in self.master_dict:
                     self.master_dict[word] = [0] * self.rules_len
                 self.master_dict[word][idx] += 1
@@ -89,7 +95,11 @@ class NBaye(object):
         In: [word, value]
         Out: [True / False, [score]]
         """
-        words_list = data[0].split()
+        words_list = []
+        for word in data[0].split():
+            matches = re.search(regex, word)
+            if matches:
+                words_list.append(matches.group())
 
         Fr_C = np.array([self.pcx_set['pc' + str(x + 1)] for x in range(self.rules_len)])
         Pb_C = Fr_C / self.pcx_set['dataset']
